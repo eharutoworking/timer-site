@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="ja" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>無料オンライン多機能タイマー｜ポモドーロ・HIIT・学習タイマー</title>
+    <meta name="description" content="登録不要・無料で使えるオンラインタイマー。普通のタイマーに加え、ポモドーロ、HIIT、学習＆休憩など複数の時間を自動で切り替えるシーケンスタイマーも使えます。スマホ・PC対応。">
+    <meta name="robots" content="index, follow">
+    <meta name="theme-color" content="#0f172a">
+    <!-- OGP (公開URLが決まったら og:url と canonical を追加する) -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="無料オンライン多機能タイマー">
+    <meta property="og:description" content="ポモドーロ、HIIT、学習タイマーがひとつで使える無料のオンラインタイマー。">
+    <meta property="og:locale" content="ja_JP">
+    <meta name="twitter:card" content="summary">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+    <script>
+        if (window.tailwind) tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            500: '#06b6d4',
+                            600: '#0891b2',
+                            700: '#0e7490',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@0.263.1/dist/umd/lucide.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .progress-ring__circle {
+            transition: stroke-dashoffset 0.35s;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(156, 163, 175, 0.5);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(107, 114, 128, 0.8);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col justify-between transition-colors duration-300">
+
+    <!-- Header -->
+    <header class="w-full border-b border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <div class="p-2 bg-cyan-500/10 text-cyan-500 rounded-xl">
+                    <i data-lucide="timer" class="w-6 h-6"></i>
+                </div>
+                <h1 class="text-xl font-bold bg-gradient-to-r from-cyan-500 to-blue-600 bg-clip-text text-transparent">
+                    多機能タイマー
+                </h1>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <!-- Theme Toggle Button -->
+                <button id="themeToggleBtn" class="p-2 rounded-xl text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                    <i data-lucide="sun" id="sunIcon" class="w-5 h-5"></i>
+                    <i data-lucide="moon" id="moonIcon" class="w-5 h-5 hidden"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-4xl mx-auto px-4 py-6 w-full flex-1 flex flex-col items-center justify-start gap-8">
+        
+        <!-- Mode Switcher Tabs -->
+        <div class="bg-slate-200/70 dark:bg-slate-800/70 p-1.5 rounded-2xl flex w-full max-w-md shadow-inner">
+            <button id="modeSingleBtn" class="flex-1 py-2.5 px-4 rounded-xl font-medium text-sm transition-all duration-200 flex items-center justify-center gap-2 bg-white dark:bg-slate-700 shadow-sm text-cyan-600 dark:text-cyan-400">
+                <i data-lucide="clock" class="w-4 h-4"></i>
+                シングルタイマー
+            </button>
+            <button id="modeSequenceBtn" class="flex-1 py-2.5 px-4 rounded-xl font-medium text-sm transition-all duration-200 flex items-center justify-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100">
+                <i data-lucide="list-ordered" class="w-4 h-4"></i>
+                シーケンスタイマー
+            </button>
+        </div>
+
+        <!-- Presets Container (Visible for both or dynamic) -->
+        <div class="w-full max-w-xl">
+            <div class="flex items-center justify-between mb-3">
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1">
+                    <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> プリセットルーチン
+                </span>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                <button onclick="applyPreset('pomodoro')" class="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/60 hover:border-cyan-500 dark:hover:border-cyan-500 hover:shadow-md transition text-left group">
+                    <div class="text-xs font-semibold text-slate-700 dark:text-slate-200 group-hover:text-cyan-500">ポモドーロ</div>
+                    <div class="text-[11px] text-slate-400">25分作業 + 5分休憩 (4周)</div>
+                </button>
+                <button onclick="applyPreset('hiit')" class="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/60 hover:border-cyan-500 dark:hover:border-cyan-500 hover:shadow-md transition text-left group">
+                    <div class="text-xs font-semibold text-slate-700 dark:text-slate-200 group-hover:text-cyan-500">HIIT 運動</div>
+                    <div class="text-[11px] text-slate-400">20秒高負荷 + 10秒休憩 (8周)</div>
+                </button>
+                <button onclick="applyPreset('study')" class="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/60 hover:border-cyan-500 dark:hover:border-cyan-500 hover:shadow-md transition text-left group">
+                    <div class="text-xs font-semibold text-slate-700 dark:text-slate-200 group-hover:text-cyan-500">学習＆休憩</div>
+                    <div class="text-[11px] text-slate-400">45分勉強 + 15分休憩</div>
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Display Card -->
+        <div class="w-full max-w-xl bg-white dark:bg-slate-800/80 rounded-3xl p-6 sm:p-8 shadow-xl border border-slate-100 dark:border-slate-700/50 flex flex-col items-center relative overflow-hidden backdrop-blur-sm">
+            
+            <!-- Sequence Status Header (Only visible in Sequence Mode) -->
+            <div id="sequenceHeader" class="w-full mb-4 hidden">
+                <div class="flex justify-between items-center text-xs font-semibold text-slate-400 mb-1">
+                    <span id="sequenceCurrentStepName" class="text-cyan-500 font-bold text-sm">ステップ 1</span>
+                    <span id="sequenceProgressText">1 / 1 ステップ</span>
+                </div>
+                <!-- Overall Progress Bar -->
+                <div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-2 overflow-hidden">
+                    <div id="sequenceProgressBar" class="bg-gradient-to-r from-cyan-500 to-blue-500 h-full w-0 transition-all duration-300"></div>
+                </div>
+            </div>
+
+            <!-- Circular Progress & Time Display -->
+            <div class="relative flex items-center justify-center my-4">
+                <svg class="w-64 h-64 sm:w-72 sm:h-72" viewBox="0 0 220 220">
+                    <circle class="text-slate-100 dark:text-slate-700/60" stroke-width="12" stroke="currentColor" fill="transparent" r="90" cx="110" cy="110" />
+                    <circle id="progressRing" class="progress-ring__circle text-cyan-500" stroke-width="12" stroke-dasharray="565.48" stroke-dashoffset="0" stroke-linecap="round" stroke="currentColor" fill="transparent" r="90" cx="110" cy="110" />
+                </svg>
+
+                <div class="absolute flex flex-col items-center justify-center text-center">
+                    <span id="stepCategoryBadge" class="px-3 py-0.5 rounded-full text-xs font-medium bg-cyan-100 dark:bg-cyan-950/80 text-cyan-600 dark:text-cyan-400 mb-2">
+                        タイマー
+                    </span>
+                    <div id="timeDisplay" class="text-5xl sm:text-6xl font-extrabold tracking-tight font-mono text-slate-800 dark:text-slate-100">
+                        00:00
+                    </div>
+                    <span id="subTimeText" class="text-xs text-slate-400 mt-2 min-h-[16px]">
+                        セット時間: 05:00
+                    </span>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="flex flex-wrap items-center justify-center gap-3 sm:gap-4 mt-4">
+                <button id="resetBtn" title="最初の時間に戻す" class="px-5 py-4 rounded-2xl border-2 border-slate-300 dark:border-slate-500 bg-white dark:bg-slate-700/70 text-slate-700 dark:text-slate-100 font-bold hover:border-cyan-500 hover:text-cyan-600 dark:hover:border-cyan-400 dark:hover:text-cyan-400 transition active:scale-95 flex items-center gap-2">
+                    <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
+                    <span>リセット</span>
+                </button>
+                <button id="startPauseBtn" class="px-8 py-4 rounded-2xl bg-cyan-500 hover:bg-cyan-600 text-white font-bold shadow-lg shadow-cyan-500/30 transition active:scale-95 flex items-center gap-2 text-lg">
+                    <i data-lucide="play" id="startIcon" class="w-6 h-6 fill-current"></i>
+                    <i data-lucide="pause" id="pauseIcon" class="w-6 h-6 fill-current hidden"></i>
+                    <span id="startPauseText">スタート</span>
+                </button>
+                <button id="skipBtn" title="次のステップへ" aria-label="次のステップへ" class="p-4 rounded-2xl bg-slate-100 dark:bg-slate-700/70 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition active:scale-95 hidden">
+                    <i data-lucide="skip-forward" class="w-6 h-6"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Single Timer Inputs (Visible only in Single Mode) -->
+        <div id="singleTimerInputs" class="w-full max-w-xl bg-white dark:bg-slate-800/50 rounded-2xl p-5 border border-slate-100 dark:border-slate-800 shadow-sm">
+            <h2 class="text-sm font-semibold text-slate-600 dark:text-slate-300 mb-4 flex items-center gap-1.5">
+                <i data-lucide="sliders" class="w-4 h-4 text-cyan-500"></i> 時間をセット
+            </h2>
+            <div class="grid grid-cols-3 gap-3">
+                <div class="flex flex-col">
+                    <label class="text-xs text-slate-400 mb-1">時間 (時)</label>
+                    <input type="number" id="inputHours" min="0" max="99" value="0" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-center text-lg font-semibold focus:outline-none focus:border-cyan-500">
+                </div>
+                <div class="flex flex-col">
+                    <label class="text-xs text-slate-400 mb-1">分</label>
+                    <input type="number" id="inputMinutes" min="0" max="59" value="5" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-center text-lg font-semibold focus:outline-none focus:border-cyan-500">
+                </div>
+                <div class="flex flex-col">
+                    <label class="text-xs text-slate-400 mb-1">秒</label>
+                    <input type="number" id="inputSeconds" min="0" max="59" value="0" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-center text-lg font-semibold focus:outline-none focus:border-cyan-500">
+                </div>
+            </div>
+            <!-- Quick Add Minutes -->
+            <div class="flex gap-2 mt-4 overflow-x-auto pb-1">
+                <button onclick="addQuickTime(60)" class="px-3 py-1.5 rounded-lg text-xs bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition whitespace-nowrap">+1分</button>
+                <button onclick="addQuickTime(300)" class="px-3 py-1.5 rounded-lg text-xs bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition whitespace-nowrap">+5分</button>
+                <button onclick="addQuickTime(600)" class="px-3 py-1.5 rounded-lg text-xs bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition whitespace-nowrap">+10分</button>
+                <button onclick="addQuickTime(1500)" class="px-3 py-1.5 rounded-lg text-xs bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition whitespace-nowrap">+25分</button>
+            </div>
+        </div>
+
+        <!-- Sequence Step Manager (Visible only in Sequence Mode) -->
+        <div id="sequenceTimerInputs" class="w-full max-w-xl bg-white dark:bg-slate-800/50 rounded-2xl p-5 border border-slate-100 dark:border-slate-800 shadow-sm hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-sm font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
+                    <i data-lucide="list" class="w-4 h-4 text-cyan-500"></i> シーケンスステップ一覧
+                </h2>
+                <div class="flex items-center gap-4 text-xs text-slate-500">
+                    <label class="flex items-center gap-1.5 cursor-pointer">
+                        <input type="checkbox" id="autoAdvanceToggle" checked class="rounded text-cyan-500 focus:ring-cyan-500">
+                        自動で次のステップへ
+                    </label>
+                    <label class="flex items-center gap-1.5 cursor-pointer">
+                        <input type="checkbox" id="loopToggle" class="rounded text-cyan-500 focus:ring-cyan-500">
+                        ループ再生
+                    </label>
+                </div>
+            </div>
+
+            <!-- Step List -->
+            <p class="text-[11px] text-slate-400 mb-2">ステップをタップすると、そのステップに移動します。</p>
+            <div id="stepListContainer" class="space-y-2 max-h-60 overflow-y-auto pr-1 mb-4">
+                <!-- Steps render dynamically -->
+            </div>
+
+            <div class="flex justify-end mb-4 -mt-2">
+                <button id="clearStepsBtn" onclick="clearAllSteps()" class="px-3 py-1.5 rounded-lg text-xs font-medium text-rose-500 border border-rose-300 dark:border-rose-500/50 hover:bg-rose-500 hover:text-white hover:border-rose-500 transition">
+                    すべてのステップを削除
+                </button>
+            </div>
+
+            <!-- Add Step Form -->
+            <div class="pt-3 border-t border-slate-100 dark:border-slate-700/60 flex flex-wrap sm:flex-nowrap gap-2 items-center">
+                <input type="text" id="newStepName" placeholder="ステップ名 (例: 作業)" class="flex-1 min-w-[120px] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-cyan-500">
+                
+                <div class="flex items-center gap-1">
+                    <input type="number" id="newStepMin" placeholder="分" min="0" value="5" class="w-16 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-2 py-2 text-center text-sm focus:outline-none focus:border-cyan-500">
+                    <span class="text-xs text-slate-400">分</span>
+                    <input type="number" id="newStepSec" placeholder="秒" min="0" max="59" value="0" class="w-16 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-2 py-2 text-center text-sm focus:outline-none focus:border-cyan-500">
+                    <span class="text-xs text-slate-400">秒</span>
+                </div>
+
+                <select id="newStepCategory" class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-2 py-2 text-sm focus:outline-none focus:border-cyan-500">
+                    <option value="work">作業 (青)</option>
+                    <option value="break">休憩 (緑)</option>
+                    <option value="exercise">運動 (赤)</option>
+                    <option value="rest">完了 (紫)</option>
+                </select>
+
+                <button id="addStepBtn" class="px-4 py-2 bg-slate-800 dark:bg-slate-700 text-white rounded-xl text-sm font-semibold hover:bg-slate-700 dark:hover:bg-slate-600 transition flex items-center gap-1 whitespace-nowrap">
+                    <i data-lucide="plus" class="w-4 h-4"></i> 追加
+                </button>
+            </div>
+        </div>
+
+        <!-- 広告スペース候補(上): AdSense承認後にここへ広告コードを貼る -->
+
+        <!-- 説明コンテンツ (検索・広告審査用の文章) -->
+        <section class="w-full max-w-xl space-y-6 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+            <div>
+                <h2 class="text-base font-bold text-slate-800 dark:text-slate-100 mb-2">多機能タイマーの使い方</h2>
+                <p class="mb-2"><strong>シングルタイマー：</strong>時間・分・秒を入力して「スタート」を押すだけで使える、シンプルなカウントダウンタイマーです。「+1分」「+5分」などのボタンで素早く時間を足せます。</p>
+                <p><strong>シーケンスタイマー：</strong>「作業25分→休憩5分」のように、複数の時間を順番に自動で切り替えて計測できます。ステップは自由に追加・削除でき、ループ再生にも対応しています。</p>
+            </div>
+            <div>
+                <h2 class="text-base font-bold text-slate-800 dark:text-slate-100 mb-2">プリセットの活用例</h2>
+                <ul class="list-disc pl-5 space-y-1">
+                    <li><strong>ポモドーロ・テクニック：</strong>25分の作業と5分の休憩を4回繰り返し、最後に長めの休憩をとる時間管理法です。勉強や仕事の集中に役立ちます。</li>
+                    <li><strong>HIIT：</strong>20秒の高負荷運動と10秒の休憩を8回繰り返す、短時間の筋トレ向けの設定です。</li>
+                    <li><strong>学習＆休憩：</strong>45分の勉強と15分の休憩を組み合わせた、資格試験や受験勉強向けの設定です。</li>
+                </ul>
+            </div>
+            <div>
+                <h2 class="text-base font-bold text-slate-800 dark:text-slate-100 mb-2">よくある質問</h2>
+                <dl class="space-y-3">
+                    <div>
+                        <dt class="font-semibold text-slate-700 dark:text-slate-200">Q. 無料で使えますか？</dt>
+                        <dd>A. はい、登録不要で無料で使えます。</dd>
+                    </div>
+                    <div>
+                        <dt class="font-semibold text-slate-700 dark:text-slate-200">Q. スマホでも使えますか？</dt>
+                        <dd>A. はい、スマホ・タブレット・パソコンのブラウザで利用できます。</dd>
+                    </div>
+                    <div>
+                        <dt class="font-semibold text-slate-700 dark:text-slate-200">Q. 終了時に音が鳴りますか？</dt>
+                        <dd>A. はい、終了時に通知音が鳴ります。端末の音量とマナーモードの設定をご確認ください。</dd>
+                    </div>
+                    <div>
+                        <dt class="font-semibold text-slate-700 dark:text-slate-200">Q. 別のタブを開いていても動きますか？</dt>
+                        <dd>A. はい。ただし、ブラウザを閉じたり、スマホの画面を完全にロックしたりすると、動作が止まる場合があります。</dd>
+                    </div>
+                </dl>
+            </div>
+        </section>
+
+        <!-- 広告スペース候補(下): AdSense承認後にここへ広告コードを貼る -->
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="py-4 text-center text-xs text-slate-400 border-t border-slate-200 dark:border-slate-800">
+        <!-- プライバシーポリシー・お問い合わせ・運営者情報へのリンクは、ページを作ってからここに追加する -->
+        © 多機能タイマー
+    </footer>
+
+    <!-- Sound Effects via Web Audio API -->
+    <script>
+        class SoundEffects {
+            constructor() {
+                this.ctx = null;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            playBeep(freq = 880, type = 'sine', duration = 0.15) {
+                this.init();
+                if (!this.ctx) return;
+
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start();
+                osc.stop(this.ctx.currentTime + duration);
+            }
+
+            playStepComplete() {
+                // High double beep
+                this.playBeep(880, 'sine', 0.1);
+                setTimeout(() => this.playBeep(1320, 'sine', 0.2), 120);
+            }
+
+            playSequenceComplete() {
+                // Fanfare-like sequence
+                const notes = [523.25, 659.25, 783.99, 1046.50];
+                notes.forEach((freq, idx) => {
+                    setTimeout(() => {
+                        this.playBeep(freq, 'triangle', 0.25);
+                    }, idx * 150);
+                });
+            }
+        }
+
+        const soundEffects = new SoundEffects();
+    </script>
+
+    <!-- App Logic -->
+    <script>
+        // State Variables
+        let currentMode = 'single'; // 'single' or 'sequence'
+        let timerInterval = null;
+        let endTime = 0; // 終了予定時刻(ms)。setIntervalのズレ対策
+        const BASE_TITLE = document.title;
+        let isRunning = false;
+        
+        let totalSeconds = 300; // current active step total seconds
+        let remainingSeconds = 300; // current active step remaining seconds
+
+        // Sequence State
+        let sequenceSteps = [
+            { id: '1', name: '作業', minutes: 25, seconds: 0, category: 'work' },
+            { id: '2', name: '小休憩', minutes: 5, seconds: 0, category: 'break' },
+            { id: '3', name: '作業', minutes: 25, seconds: 0, category: 'work' },
+            { id: '4', name: '長休憩', minutes: 15, seconds: 0, category: 'break' }
+        ];
+        let currentStepIndex = 0;
+
+        // Color categories mapping
+        const categoryColors = {
+            work: { bg: 'bg-blue-500', text: 'text-blue-500', badgeBg: 'bg-blue-100 dark:bg-blue-950/80', badgeText: 'text-blue-600 dark:text-blue-400', stroke: '#3b82f6' },
+            break: { bg: 'bg-emerald-500', text: 'text-emerald-500', badgeBg: 'bg-emerald-100 dark:bg-emerald-950/80', badgeText: 'text-emerald-600 dark:text-emerald-400', stroke: '#10b981' },
+            exercise: { bg: 'bg-rose-500', text: 'text-rose-500', badgeBg: 'bg-rose-100 dark:bg-rose-950/80', badgeText: 'text-rose-600 dark:text-rose-400', stroke: '#f43f5e' },
+            rest: { bg: 'bg-purple-500', text: 'text-purple-500', badgeBg: 'bg-purple-100 dark:bg-purple-950/80', badgeText: 'text-purple-600 dark:text-purple-400', stroke: '#a855f7' }
+        };
+
+        // DOM Elements
+        const timeDisplay = document.getElementById('timeDisplay');
+        const subTimeText = document.getElementById('subTimeText');
+        const startPauseBtn = document.getElementById('startPauseBtn');
+        const startIcon = document.getElementById('startIcon');
+        const pauseIcon = document.getElementById('pauseIcon');
+        const startPauseText = document.getElementById('startPauseText');
+        const resetBtn = document.getElementById('resetBtn');
+        const skipBtn = document.getElementById('skipBtn');
+        const progressRing = document.getElementById('progressRing');
+        const stepCategoryBadge = document.getElementById('stepCategoryBadge');
+
+        const modeSingleBtn = document.getElementById('modeSingleBtn');
+        const modeSequenceBtn = document.getElementById('modeSequenceBtn');
+        const singleTimerInputs = document.getElementById('singleTimerInputs');
+        const sequenceTimerInputs = document.getElementById('sequenceTimerInputs');
+        const sequenceHeader = document.getElementById('sequenceHeader');
+
+        const inputHours = document.getElementById('inputHours');
+        const inputMinutes = document.getElementById('inputMinutes');
+        const inputSeconds = document.getElementById('inputSeconds');
+
+        // Circle SVG config
+        const radius = 90;
+        const circumference = 2 * Math.PI * radius;
+        progressRing.style.strokeDasharray = `${circumference} ${circumference}`;
+
+        // Initialize Lucide Icons (読み込みに失敗してもタイマー本体は動くようにする)
+        function safeIcons() {
+            try { if (window.lucide) lucide.createIcons(); } catch (e) { console.warn('icons failed', e); }
+        }
+        safeIcons();
+
+        // Theme Toggle Logic
+        const themeToggleBtn = document.getElementById('themeToggleBtn');
+        const sunIcon = document.getElementById('sunIcon');
+        const moonIcon = document.getElementById('moonIcon');
+
+        themeToggleBtn.addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+            const isDark = document.documentElement.classList.contains('dark');
+            sunIcon.classList.toggle('hidden', !isDark);
+            moonIcon.classList.toggle('hidden', isDark);
+        });
+
+        // Mode Switching
+        modeSingleBtn.addEventListener('click', () => switchMode('single'));
+        modeSequenceBtn.addEventListener('click', () => switchMode('sequence'));
+
+        function switchMode(mode) {
+            stopAlarm(false);
+            if (isRunning) pauseTimer();
+            currentMode = mode;
+
+            if (mode === 'single') {
+                modeSingleBtn.className = "flex-1 py-2.5 px-4 rounded-xl font-medium text-sm transition-all duration-200 flex items-center justify-center gap-2 bg-white dark:bg-slate-700 shadow-sm text-cyan-600 dark:text-cyan-400";
+                modeSequenceBtn.className = "flex-1 py-2.5 px-4 rounded-xl font-medium text-sm transition-all duration-200 flex items-center justify-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100";
+                
+                singleTimerInputs.classList.remove('hidden');
+                sequenceTimerInputs.classList.add('hidden');
+                sequenceHeader.classList.add('hidden');
+                skipBtn.classList.add('hidden');
+
+                stepCategoryBadge.textContent = "シングル";
+                updateCategoryStyle('work');
+                readSingleInputs();
+            } else {
+                modeSequenceBtn.className = "flex-1 py-2.5 px-4 rounded-xl font-medium text-sm transition-all duration-200 flex items-center justify-center gap-2 bg-white dark:bg-slate-700 shadow-sm text-cyan-600 dark:text-cyan-400";
+                modeSingleBtn.className = "flex-1 py-2.5 px-4 rounded-xl font-medium text-sm transition-all duration-200 flex items-center justify-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100";
+                
+                singleTimerInputs.classList.add('hidden');
+                sequenceTimerInputs.classList.remove('hidden');
+                sequenceHeader.classList.remove('hidden');
+                skipBtn.classList.remove('hidden');
+
+                currentStepIndex = 0;
+                loadSequenceStep(0);
+                renderStepList();
+            }
+        }
+
+        // Read Single Timer Inputs
+        function readSingleInputs() {
+            if (currentMode !== 'single') return;
+            const h = parseInt(inputHours.value) || 0;
+            const m = parseInt(inputMinutes.value) || 0;
+            const s = parseInt(inputSeconds.value) || 0;
+            
+            totalSeconds = h * 3600 + m * 60 + s;
+            remainingSeconds = totalSeconds;
+            updateDisplay();
+        }
+
+        [inputHours, inputMinutes, inputSeconds].forEach(input => {
+            input.addEventListener('change', () => {
+                if (!isRunning) readSingleInputs();
+            });
+        });
+
+        function addQuickTime(secondsToAdd) {
+            if (isRunning) return;
+            const currentTotal = (parseInt(inputHours.value) || 0) * 3600 + (parseInt(inputMinutes.value) || 0) * 60 + (parseInt(inputSeconds.value) || 0);
+            const newTotal = currentTotal + secondsToAdd;
+
+            const h = Math.floor(newTotal / 3600);
+            const m = Math.floor((newTotal % 3600) / 60);
+            const s = newTotal % 60;
+
+            inputHours.value = h;
+            inputMinutes.value = m;
+            inputSeconds.value = s;
+
+            readSingleInputs();
+        }
+
+        // Timer Control Functions
+        startPauseBtn.addEventListener('click', () => {
+            if (alarmActive) {
+                stopAlarm();
+                return;
+            }
+            if (isRunning) {
+                pauseTimer();
+            } else {
+                startTimer();
+            }
+        });
+
+        resetBtn.addEventListener('click', () => {
+            stopAlarm(false);
+            finishedAll = false;
+            pauseTimer();
+            if (currentMode === 'single') {
+                readSingleInputs();
+            } else {
+                currentStepIndex = 0;
+                loadSequenceStep(0);
+            }
+        });
+
+        skipBtn.addEventListener('click', () => {
+            if (currentMode === 'sequence') {
+                stopAlarm(false);
+                nextSequenceStep();
+            }
+        });
+
+        function startTimer() {
+            if (remainingSeconds <= 0) return;
+            stopAlarm(false);
+            isRunning = true;
+            startIcon.classList.add('hidden');
+            pauseIcon.classList.remove('hidden');
+            startPauseText.textContent = "一時停止";
+
+            soundEffects.init(); // ユーザー操作のタイミングで音声を有効化
+            endTime = Date.now() + remainingSeconds * 1000;
+
+            timerInterval = setInterval(() => {
+                const newRemaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
+                if (newRemaining !== remainingSeconds) {
+                    remainingSeconds = newRemaining;
+                    updateDisplay();
+                }
+                if (remainingSeconds <= 0) {
+                    onTimerFinished();
+                }
+            }, 250);
+        }
+
+        function pauseTimer() {
+            isRunning = false;
+            clearInterval(timerInterval);
+            startIcon.classList.remove('hidden');
+            pauseIcon.classList.add('hidden');
+            startPauseText.textContent = "スタート";
+            document.title = BASE_TITLE;
+        }
+
+        // ---- アラーム(停止ボタンを押すまで繰り返し鳴らす) ----
+        let alarmInterval = null;
+        let alarmActive = false;
+        let finishedAll = false; // 全体が終わった状態でアラームを止めたとき、最初に戻すための印
+
+        function setAlarmUI(on) {
+            startPauseBtn.classList.toggle('bg-cyan-500', !on);
+            startPauseBtn.classList.toggle('hover:bg-cyan-600', !on);
+            startPauseBtn.classList.toggle('shadow-cyan-500/30', !on);
+            startPauseBtn.classList.toggle('bg-rose-500', on);
+            startPauseBtn.classList.toggle('hover:bg-rose-600', on);
+            startPauseBtn.classList.toggle('shadow-rose-500/30', on);
+            if (on) {
+                startIcon.classList.add('hidden');
+                pauseIcon.classList.add('hidden');
+                startPauseText.textContent = "停止";
+            } else {
+                startIcon.classList.remove('hidden');
+                pauseIcon.classList.add('hidden');
+                startPauseText.textContent = "スタート";
+            }
+        }
+
+        function startAlarm(resetOnStop) {
+            stopAlarm(false);
+            alarmActive = true;
+            finishedAll = resetOnStop;
+            setAlarmUI(true);
+            soundEffects.playSequenceComplete();
+            alarmInterval = setInterval(() => soundEffects.playSequenceComplete(), 1500);
+        }
+
+        function stopAlarm(applyReset = true) {
+            if (!alarmActive) return;
+            clearInterval(alarmInterval);
+            alarmInterval = null;
+            alarmActive = false;
+            setAlarmUI(false);
+            if (applyReset && finishedAll) {
+                finishedAll = false;
+                if (currentMode === 'single') {
+                    readSingleInputs();
+                } else {
+                    currentStepIndex = 0;
+                    loadSequenceStep(0);
+                }
+            }
+        }
+
+        function onTimerFinished() {
+            pauseTimer();
+
+            if (currentMode === 'single') {
+                startAlarm(true);
+            } else {
+                // Sequence mode
+                const autoAdvance = document.getElementById('autoAdvanceToggle').checked;
+                const isLastStep = currentStepIndex >= sequenceSteps.length - 1;
+
+                if (isLastStep) {
+                    const loop = document.getElementById('loopToggle').checked;
+                    if (loop) {
+                        soundEffects.playSequenceComplete();
+                        currentStepIndex = 0;
+                        loadSequenceStep(0);
+                        if (autoAdvance) startTimer();
+                    } else {
+                        startAlarm(true);
+                    }
+                } else {
+                    currentStepIndex++;
+                    loadSequenceStep(currentStepIndex);
+                    if (autoAdvance) {
+                        soundEffects.playStepComplete();
+                        startTimer();
+                    } else {
+                        // 自動で進まない設定のときは、次へ進む操作をするまで鳴らし続ける
+                        startAlarm(false);
+                    }
+                }
+            }
+        }
+
+        // Load Sequence Step Data
+        function loadSequenceStep(index) {
+            if (!sequenceSteps[index]) {
+                // ステップが1つもない状態
+                totalSeconds = 0;
+                remainingSeconds = 0;
+                stepCategoryBadge.textContent = "ステップなし";
+                updateCategoryStyle('work');
+                updateDisplay();
+                document.getElementById('sequenceCurrentStepName').textContent = "ステップがありません";
+                document.getElementById('sequenceProgressText').textContent = "0 / 0 ステップ";
+                document.getElementById('sequenceProgressBar').style.width = "0%";
+                renderStepList();
+                return;
+            }
+            const step = sequenceSteps[index];
+            totalSeconds = step.minutes * 60 + step.seconds;
+            remainingSeconds = totalSeconds;
+
+            stepCategoryBadge.textContent = step.name;
+            updateCategoryStyle(step.category);
+
+            updateDisplay();
+            renderStepList();
+        }
+
+        function updateCategoryStyle(catKey) {
+            const cat = categoryColors[catKey] || categoryColors.work;
+            stepCategoryBadge.className = `px-3 py-0.5 rounded-full text-xs font-medium ${cat.badgeBg} ${cat.badgeText} mb-2`;
+            progressRing.style.stroke = cat.stroke;
+        }
+
+        function nextSequenceStep() {
+            pauseTimer();
+            if (sequenceSteps.length === 0) return;
+            if (currentStepIndex < sequenceSteps.length - 1) {
+                currentStepIndex++;
+            } else {
+                currentStepIndex = 0;
+            }
+            loadSequenceStep(currentStepIndex);
+        }
+
+        // Update UI Display
+        function updateDisplay() {
+            const h = Math.floor(remainingSeconds / 3600);
+            const m = Math.floor((remainingSeconds % 3600) / 60);
+            const s = remainingSeconds % 60;
+
+            const formatted = h > 0 
+                ? `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+                : `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+
+            timeDisplay.textContent = formatted;
+            if (isRunning) document.title = `${formatted} - 多機能タイマー`;
+
+            // Total set time display
+            const setM = Math.floor(totalSeconds / 60);
+            const setS = totalSeconds % 60;
+            subTimeText.textContent = `セット時間: ${String(setM).padStart(2, '0')}:${String(setS).padStart(2, '0')}`;
+
+            // Progress Ring Offset
+            const progress = totalSeconds > 0 ? (totalSeconds - remainingSeconds) / totalSeconds : 0;
+            const offset = circumference - (progress * circumference);
+            progressRing.style.strokeDashoffset = offset;
+
+            // Sequence overall header progress
+            if (currentMode === 'sequence' && sequenceSteps.length > 0) {
+                document.getElementById('sequenceCurrentStepName').textContent = `ステップ ${currentStepIndex + 1}: ${sequenceSteps[currentStepIndex]?.name || ''}`;
+                document.getElementById('sequenceProgressText').textContent = `${currentStepIndex + 1} / ${sequenceSteps.length} ステップ`;
+                
+                const overallPct = ((currentStepIndex + progress) / sequenceSteps.length) * 100;
+                document.getElementById('sequenceProgressBar').style.width = `${Math.min(overallPct, 100)}%`;
+            }
+        }
+
+        function escapeHtml(str) {
+            return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        }
+
+        // Render Sequence Step List
+        function renderStepList() {
+            const container = document.getElementById('stepListContainer');
+            container.innerHTML = '';
+
+            if (sequenceSteps.length === 0) {
+                container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">ステップがありません。下のフォームから追加するか、プリセットを選んでください。</p>';
+                document.getElementById('clearStepsBtn').classList.add('hidden');
+                return;
+            }
+            document.getElementById('clearStepsBtn').classList.remove('hidden');
+
+            sequenceSteps.forEach((step, idx) => {
+                const isActive = idx === currentStepIndex && currentMode === 'sequence';
+                const cat = categoryColors[step.category] || categoryColors.work;
+
+                const item = document.createElement('div');
+                item.className = `flex items-center justify-between p-2.5 rounded-xl border transition cursor-pointer select-none ${
+                    isActive 
+                        ? 'border-cyan-500 bg-cyan-500/10 dark:bg-cyan-950/40 shadow-sm' 
+                        : 'border-slate-200 dark:border-slate-700/60 bg-slate-50/50 dark:bg-slate-800/40'
+                }`;
+
+                item.setAttribute('role', 'button');
+                item.setAttribute('tabindex', '0');
+                item.title = 'タップしてこのステップへ移動';
+                item.addEventListener('click', () => selectStep(idx));
+                item.addEventListener('keydown', (e) => {
+                    if (e.target === item && (e.key === 'Enter' || e.key === ' ')) {
+                        e.preventDefault();
+                        selectStep(idx);
+                    }
+                });
+
+                item.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full ${cat.bg}"></span>
+                        <span class="text-sm font-medium ${isActive ? 'font-bold text-cyan-600 dark:text-cyan-400' : ''}">${escapeHtml(step.name)}</span>
+                        <span class="text-xs text-slate-400">(${step.minutes}分${step.seconds > 0 ? step.seconds + '秒' : ''})</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        ${isActive ? '<span class="text-[10px] bg-cyan-500 text-white px-2 py-0.5 rounded-full font-bold">実行中</span>' : ''}
+                        <button onclick="event.stopPropagation(); deleteStep('${step.id}')" title="このステップを削除" aria-label="${escapeHtml(step.name)}を削除" class="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-white hover:bg-rose-500 border border-slate-200 dark:border-slate-600 hover:border-rose-500 transition">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>削除
+                        </button>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+            safeIcons();
+        }
+
+        // Add New Step
+        document.getElementById('addStepBtn').addEventListener('click', () => {
+            const nameInput = document.getElementById('newStepName');
+            const minInput = document.getElementById('newStepMin');
+            const secInput = document.getElementById('newStepSec');
+            const catInput = document.getElementById('newStepCategory');
+
+            const name = nameInput.value.trim() || 'ステップ';
+            const minutes = parseInt(minInput.value) || 0;
+            const seconds = parseInt(secInput.value) || 0;
+
+            if (minutes === 0 && seconds === 0) return;
+
+            sequenceSteps.push({
+                id: Date.now().toString(),
+                name,
+                minutes,
+                seconds,
+                category: catInput.value
+            });
+
+            nameInput.value = '';
+            renderStepList();
+
+            if (currentMode === 'sequence' && sequenceSteps.length === 1) {
+                loadSequenceStep(0);
+            }
+        });
+
+        // ステップをタップして、そのステップへ移動する
+        function selectStep(idx) {
+            if (currentMode !== 'sequence' || !sequenceSteps[idx]) return;
+            if (idx === currentStepIndex && !alarmActive) return;
+            const wasRunning = isRunning;
+            stopAlarm(false);
+            finishedAll = false;
+            pauseTimer();
+            currentStepIndex = idx;
+            loadSequenceStep(idx);
+            if (wasRunning) startTimer(); // 動作中ならそのまま続けて計測する
+        }
+
+        function resetAfterStepChange() {
+            stopAlarm(false);
+            finishedAll = false;
+            pauseTimer();
+        }
+
+        function deleteStep(id) {
+            const idx = sequenceSteps.findIndex(st => st.id === id);
+            if (idx === -1) return;
+
+            resetAfterStepChange();
+            sequenceSteps.splice(idx, 1);
+
+            // 削除したステップより前にある場合は位置をずらす
+            if (idx < currentStepIndex) currentStepIndex--;
+            if (currentStepIndex >= sequenceSteps.length) {
+                currentStepIndex = Math.max(0, sequenceSteps.length - 1);
+            }
+            loadSequenceStep(currentStepIndex);
+        }
+
+        function clearAllSteps() {
+            if (sequenceSteps.length === 0) return;
+            if (!confirm("すべてのステップを削除します。よろしいですか？")) return;
+            resetAfterStepChange();
+            sequenceSteps = [];
+            currentStepIndex = 0;
+            loadSequenceStep(0);
+        }
+
+        // Apply Presets
+        function applyPreset(type) {
+            stopAlarm(false);
+            pauseTimer();
+            if (type === 'pomodoro') {
+                sequenceSteps = [
+                    { id: '1', name: '作業 1', minutes: 25, seconds: 0, category: 'work' },
+                    { id: '2', name: '休憩 1', minutes: 5, seconds: 0, category: 'break' },
+                    { id: '3', name: '作業 2', minutes: 25, seconds: 0, category: 'work' },
+                    { id: '4', name: '休憩 2', minutes: 5, seconds: 0, category: 'break' },
+                    { id: '5', name: '作業 3', minutes: 25, seconds: 0, category: 'work' },
+                    { id: '6', name: '休憩 3', minutes: 5, seconds: 0, category: 'break' },
+                    { id: '7', name: '作業 4', minutes: 25, seconds: 0, category: 'work' },
+                    { id: '8', name: '長休憩', minutes: 15, seconds: 0, category: 'rest' }
+                ];
+            } else if (type === 'hiit') {
+                sequenceSteps = [];
+                for (let i = 1; i <= 8; i++) {
+                    sequenceSteps.push({ id: `w_${i}`, name: `運動 ${i}`, minutes: 0, seconds: 20, category: 'exercise' });
+                    sequenceSteps.push({ id: `b_${i}`, name: `休憩 ${i}`, minutes: 0, seconds: 10, category: 'break' });
+                }
+            } else if (type === 'study') {
+                sequenceSteps = [
+                    { id: '1', name: '集中学習', minutes: 45, seconds: 0, category: 'work' },
+                    { id: '2', name: 'リフレッシュ休憩', minutes: 15, seconds: 0, category: 'break' }
+                ];
+            }
+
+            switchMode('sequence');
+        }
+
+        // Initialize Display
+        readSingleInputs();
+    </script>
+</body>
+</html>
